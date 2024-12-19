@@ -123,6 +123,7 @@ probe(
       case _(0x32c, 4):
         *value = 0x00020002;
         break;
+      case _(0x32c, 2):
       case _(0x32e, 2):
         *value = 0x0002;
         break;
