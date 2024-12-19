@@ -1,10 +1,10 @@
-modname = unstrict_devmem
-modsource = unstrict_devmem
+modname = pcibus2
+modsource = pcibus2
 
-all: memdump $(modname).ko
+all: $(modname).ko
 
 KDIR = /lib/modules/$(shell uname -r)/build
-ccflags-y += $(CFLAGS)
+ccflags-y += $(CFLAGS) -Wno-int-conversion
 
 obj-m += $(modname).o
 ifneq ($(modname), $(modsource))
