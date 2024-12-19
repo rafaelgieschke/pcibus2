@@ -128,8 +128,11 @@ probe(
         *value = 0x0002;
         break;
       }
-      pr_info("pci_read: %02x:%02x@%03x.%d: %x -> %x\n",
-              bus->number, devfn, where, size, oldval, *value);
+      if (true || *value != oldval)
+      {
+        pr_info("pci_read: %02x:%02x@%03x.%d: %x -> %x\n",
+                bus->number, devfn, where, size, oldval, *value);
+      }
       return 0;
     });
 
