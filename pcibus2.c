@@ -104,21 +104,8 @@ probe(
 
 probe(
     // https://github.com/torvalds/linux/blob/7503345ac5f5e82fd9a36d6e6b447c016376403a/drivers/pci/access.c#L570
-    pci_read,
-    (struct pci_bus * bus, unsigned int devfn, int where, int size, u32 *value),
+    pci_read, (struct pci_bus * bus, unsigned int devfn, int where, int size, u32 *value), {},
     {
-      u32 bus;
-      u32 devfn;
-      u32 where;
-      int size;
-      u32 *val;
-    },
-    {
-      data->bus = bus->number;
-      data->devfn = devfn;
-      data->where = where;
-      data->size = size;
-      data->val = value;
       if (bus->number == 3)
       {
         return 0;
@@ -126,22 +113,22 @@ probe(
       return 1;
     },
     {
-      u32 oldval = *data->val;
+      u32 oldval = *value;
 #define _(where, size) ((where << 8) | size)
-      switch (_(data->where, data->size))
+      switch (_(where, size))
       {
       case _(0x420, 4):
-        *data->val = 0x22010015;
+        *value = 0x22010015;
         break;
       case _(0x32c, 4):
-        *data->val = 0x00020002;
+        *value = 0x00020002;
         break;
       case _(0x32e, 2):
-        *data->val = 0x0002;
+        *value = 0x0002;
         break;
       }
       pr_info("pci_read: %02x:%02x@%03x.%d: %x -> %x\n",
-              data->bus, data->devfn, data->where, data->size, oldval, *data->val);
+              bus->number, devfn, where, size, oldval, *value);
       return 0;
     });
 
