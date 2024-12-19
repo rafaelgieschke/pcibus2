@@ -12,42 +12,59 @@
 #define SELECT(f, ...) CONCAT(f, SIZE(__VA_ARGS__))(__VA_ARGS__)
 
 #define args(...) SELECT(args, __VA_ARGS__)
-#define args1(_0) _0 = regs->di
+#define reg(var, reg) var = _data->regs.reg = regs->reg
+#define args1(_0) \
+  ;               \
+  reg(_0, di)
 #define args2(_0, _1) \
   args1(_0);          \
-  _1 = regs->si
+  reg(_1, si)
 #define args3(_0, _1, _2) \
   args2(_0, _1);          \
-  _2 = regs->dx
+  reg(_2, dx)
 #define args4(_0, _1, _2, _3) \
   args3(_0, _1, _2);          \
-  _3 = regs->cx
+  reg(_3, cx)
 #define args5(_0, _1, _2, _3, _4) \
   args4(_0, _1, _2, _3);          \
-  _4 = regs->r8
+  reg(_4, r8)
 #define args6(_0, _1, _2, _3, _4, _5) \
   args5(_0, _1, _2, _3, _4);          \
-  _5 = regs->r9
+  reg(_5, r9)
 
-#define probe(name, params, fields, in, out)                                 \
-  struct name##_data fields;                                                 \
-  static int name##_in(struct kretprobe_instance *ri, struct pt_regs *regs)  \
-  {                                                                          \
-    struct name##_data *data = (struct name##_data *)ri->data;               \
-    args params;                                                             \
-    in                                                                       \
-  };                                                                         \
-  static int name##_out(struct kretprobe_instance *ri, struct pt_regs *regs) \
-  {                                                                          \
-    struct name##_data *data = (struct name##_data *)ri->data;               \
-    out                                                                      \
-  };                                                                         \
-  static struct kretprobe name##_probe = {                                   \
-      .kp = {.symbol_name = #name},                                          \
-      .entry_handler = name##_in,                                            \
-      .handler = name##_out,                                                 \
-      .maxactive = 20,                                                       \
-      .data_size = sizeof(struct name##_data),                               \
+struct regs
+{
+  unsigned long di, si, dx, cx, r8, r9;
+};
+
+#define probe(name, params, fields, in, out)                                     \
+  struct name##_data fields;                                                     \
+  struct name##_data_data                                                        \
+  {                                                                              \
+    struct name##_data data;                                                     \
+    struct regs regs;                                                            \
+  };                                                                             \
+  static int name##_in(struct kretprobe_instance *ri, struct pt_regs *regs)      \
+  {                                                                              \
+    struct name##_data_data *_data = (struct name##_data_data *)ri->data;        \
+    struct name##_data *data = &_data->data;                                     \
+    args params;                                                                 \
+    in                                                                           \
+  };                                                                             \
+  static int name##_out(struct kretprobe_instance *ri, struct pt_regs *regs_new) \
+  {                                                                              \
+    struct name##_data_data *_data = (struct name##_data_data *)ri->data;        \
+    struct name##_data *data = &_data->data;                                     \
+    struct regs *regs = &_data->regs;                                            \
+    args params;                                                                 \
+    out                                                                          \
+  };                                                                             \
+  static struct kretprobe name##_probe = {                                       \
+      .kp = {.symbol_name = #name},                                              \
+      .entry_handler = name##_in,                                                \
+      .handler = name##_out,                                                     \
+      .maxactive = 20,                                                           \
+      .data_size = sizeof(struct name##_data_data),                              \
   }
 
 probe(
