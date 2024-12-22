@@ -13,58 +13,55 @@
 
 #define args(...) SELECT(args, __VA_ARGS__)
 #define reg(var, reg) var = _data->regs.reg = regs->reg
-#define args1(_0) \
-  ;               \
+#define args1(_0)                                                              \
+  ;                                                                            \
   reg(_0, di)
-#define args2(_0, _1) \
-  args1(_0);          \
+#define args2(_0, _1)                                                          \
+  args1(_0);                                                                   \
   reg(_1, si)
-#define args3(_0, _1, _2) \
-  args2(_0, _1);          \
+#define args3(_0, _1, _2)                                                      \
+  args2(_0, _1);                                                               \
   reg(_2, dx)
-#define args4(_0, _1, _2, _3) \
-  args3(_0, _1, _2);          \
+#define args4(_0, _1, _2, _3)                                                  \
+  args3(_0, _1, _2);                                                           \
   reg(_3, cx)
-#define args5(_0, _1, _2, _3, _4) \
-  args4(_0, _1, _2, _3);          \
+#define args5(_0, _1, _2, _3, _4)                                              \
+  args4(_0, _1, _2, _3);                                                       \
   reg(_4, r8)
-#define args6(_0, _1, _2, _3, _4, _5) \
-  args5(_0, _1, _2, _3, _4);          \
+#define args6(_0, _1, _2, _3, _4, _5)                                          \
+  args5(_0, _1, _2, _3, _4);                                                   \
   reg(_5, r9)
 
-struct regs
-{
+struct regs {
   unsigned long di, si, dx, cx, r8, r9;
 };
 
-#define probe(name, params, fields, in, out)                                     \
-  struct name##_data fields;                                                     \
-  struct name##_data_data                                                        \
-  {                                                                              \
-    struct name##_data data;                                                     \
-    struct regs regs;                                                            \
-  };                                                                             \
-  static int name##_in(struct kretprobe_instance *ri, struct pt_regs *regs)      \
-  {                                                                              \
-    struct name##_data_data *_data = (struct name##_data_data *)ri->data;        \
-    struct name##_data *data = &_data->data;                                     \
-    args params;                                                                 \
-    in                                                                           \
-  };                                                                             \
-  static int name##_out(struct kretprobe_instance *ri, struct pt_regs *regs_new) \
-  {                                                                              \
-    struct name##_data_data *_data = (struct name##_data_data *)ri->data;        \
-    struct name##_data *data = &_data->data;                                     \
-    struct regs *regs = &_data->regs;                                            \
-    args params;                                                                 \
-    out                                                                          \
-  };                                                                             \
-  static struct kretprobe name##_probe = {                                       \
-      .kp = {.symbol_name = #name},                                              \
-      .entry_handler = name##_in,                                                \
-      .handler = name##_out,                                                     \
-      .maxactive = 20,                                                           \
-      .data_size = sizeof(struct name##_data_data),                              \
+#define probe(name, params, fields, in, out)                                   \
+  struct name##_data fields;                                                   \
+  struct name##_data_data {                                                    \
+    struct name##_data data;                                                   \
+    struct regs regs;                                                          \
+  };                                                                           \
+  static int name##_in(struct kretprobe_instance *ri, struct pt_regs *regs) {  \
+    struct name##_data_data *_data = (struct name##_data_data *)ri->data;      \
+    struct name##_data *data = &_data->data;                                   \
+    args params;                                                               \
+    in                                                                         \
+  };                                                                           \
+  static int name##_out(struct kretprobe_instance *ri,                         \
+                        struct pt_regs *regs_new) {                            \
+    struct name##_data_data *_data = (struct name##_data_data *)ri->data;      \
+    struct name##_data *data = &_data->data;                                   \
+    struct regs *regs = &_data->regs;                                          \
+    args params;                                                               \
+    out                                                                        \
+  };                                                                           \
+  static struct kretprobe name##_probe = {                                     \
+      .kp = {.symbol_name = #name},                                            \
+      .entry_handler = name##_in,                                              \
+      .handler = name##_out,                                                   \
+      .maxactive = 20,                                                         \
+      .data_size = sizeof(struct name##_data_data),                            \
   }
 
 probe(
@@ -93,8 +90,7 @@ probe(
       struct pci_bus *pci_bus = dev->bus;
       int bus = pci_bus ? pci_bus->number : -1;
 
-      for (int i = 0; i < PCI_NUM_RESOURCES; i++)
-      {
+      for (int i = 0; i < PCI_NUM_RESOURCES; i++) {
         pr_info("pci_fixup_header: %p - %02x:%02x BAR %d %pR\n", dev, bus,
                 dev->devfn, i, &dev->resource[i]);
       }
@@ -104,10 +100,11 @@ probe(
 
 probe(
     // https://github.com/torvalds/linux/blob/7503345ac5f5e82fd9a36d6e6b447c016376403a/drivers/pci/access.c#L570
-    pci_read, (struct pci_bus * bus, unsigned int devfn, int where, int size, u32 *value), {},
+    pci_read,
+    (struct pci_bus * bus, unsigned int devfn, int where, int size, u32 *value),
+    {},
     {
-      if (bus->number == 3)
-      {
+      if (bus->number == 3) {
         return 0;
       }
       return 1;
@@ -115,8 +112,7 @@ probe(
     {
       u32 oldval = *value;
 #define _(where, size) ((where << 8) | size)
-      switch (_(where, size))
-      {
+      switch (_(where, size)) {
       case _(0x420, 4):
         *value = 0x22010015;
         break;
@@ -128,17 +124,20 @@ probe(
         *value = 0x0002;
         break;
       }
-      if (true || *value != oldval)
-      {
-        pr_info("pci_read: %02x:%02x@%03x.%d: %x -> %x\n",
-                bus->number, devfn, where, size, oldval, *value);
+      if (true || *value != oldval) {
+        pr_info("pci_read: %02x:%02x@%03x.%d: %x -> %x\n", bus->number, devfn,
+                where, size, oldval, *value);
       }
       return 0;
     });
 
-probe(sriov_init, (void *_), {}, {
-  pr_info("sriov_init");
-  return 1; }, { return 0; });
+probe(
+    sriov_init, (void *_), {},
+    {
+      pr_info("sriov_init");
+      return 1;
+    },
+    { return 0; });
 
 static struct kretprobe *probes[] = {
     &pci_read_probe,
@@ -147,8 +146,7 @@ static struct kretprobe *probes[] = {
     &sriov_init_probe,
 };
 
-int init_module(void)
-{
+int init_module(void) {
   register_kretprobes(probes, ARRAY_SIZE(probes));
   return 0;
 }
