@@ -6,6 +6,13 @@ all: $(modname).ko
 KDIR = /lib/modules/$(shell uname -r)/build
 ccflags-y += $(CFLAGS) -Wno-int-conversion
 
+LINUXINCLUDE := \
+	-I$(KBUILD_EXTMOD)/linux/drivers/gpu/drm/i915 \
+	-I$(KBUILD_EXTMOD)/linux/drivers/gpu/drm/i915/soc \
+	-I$(KBUILD_EXTMOD)/linux/drivers/gpu/drm/i915/display \
+	-I$(KBUILD_EXTMOD)/linux/drivers/gpu/drm/xe \
+	$(LINUXINCLUDE)
+
 obj-m += $(modname).o
 ifneq ($(modname), $(modsource))
 	$(modname)-objs = $(modsource).o
