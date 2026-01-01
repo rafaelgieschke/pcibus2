@@ -127,4 +127,4 @@ void cleanup_module(void) {
   unregister_kretprobes(probes, _stop_probes - probes);
 }
 
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("Dual MIT/GPL");
